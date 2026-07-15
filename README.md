@@ -269,7 +269,7 @@ Computer: DC01
 
 ![Persistence Account Creation](Images/04-account-manipulation/01-client01-service-backup-created-svc-deploy.png)
 
-![New Domain User Incident](Images/04-account-manipulation/02-new-domain-user-created-incident.png)
+![New Domain User Incident](Images/04-account-manipulation/02-new-domain-user-created.png)
 
 ---
 
