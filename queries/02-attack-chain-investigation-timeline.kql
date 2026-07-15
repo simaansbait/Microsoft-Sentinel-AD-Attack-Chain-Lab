@@ -1,0 +1,122 @@
+SecurityEvent
+| where TimeGenerated > ago(7d)
+| where EventID in (4624, 4625, 4672, 4688, 4720, 4728, 4740)
+| where
+    (
+        EventID == 4688
+        and Account endswith @"\david.hr"
+        and (
+            NewProcessName endswith @"\whoami.exe"
+            or NewProcessName endswith @"\hostname.exe"
+            or NewProcessName endswith @"\nltest.exe"
+            or NewProcessName endswith @"\net.exe"
+            or NewProcessName endswith @"\runas.exe"
+        )
+    )
+    or (
+        EventID == 4625
+        and TargetUserName =~ "sarah.finance"
+    )
+    or (
+        EventID == 4740
+        and TargetUserName =~ "sarah.finance"
+    )
+    or (
+        EventID == 4624
+        and (
+            TargetUserName =~ "sarah.finance"
+            or (
+                TargetUserName =~ "Service.Backup"
+                and Computer startswith "DC01"
+                and LogonType == 3
+            )
+            or (
+                TargetUserName =~ "svc.deploy"
+                and Computer startswith "CLIENT01"
+                and LogonType == 2
+            )
+            or (
+                TargetUserName =~ "svc.deploy"
+                and Computer startswith "DC01"
+                and LogonType == 3
+            )
+        )
+    )
+    or (
+        EventID == 4672
+        and SubjectUserName in~ ("Service.Backup", "svc.deploy")
+    )
+    or (
+        EventID == 4720
+        and TargetUserName =~ "svc.deploy"
+    )
+    or (
+        EventID == 4728
+        and MemberName has "Deployment Service"
+    )
+| extend Actor = case(
+    EventID in (4720, 4728, 4672),
+        strcat(SubjectDomainName, "\\", SubjectUserName),
+    EventID == 4688,
+        Account,
+    EventID in (4624, 4625),
+        Account,
+    ""
+)
+| extend Target = case(
+    EventID in (4624, 4625, 4740, 4720),
+        strcat(TargetDomainName, "\\", TargetUserName),
+    EventID == 4728,
+        MemberName,
+    ""
+)
+| extend Stage = case(
+    EventID == 4688 and NewProcessName endswith @"\runas.exe",
+        "Credential use initiated",
+    EventID == 4688,
+        "Reconnaissance / process execution",
+    EventID == 4625,
+        "Password attack - failed logon",
+    EventID == 4740,
+        "Account lockout",
+    EventID == 4624 and TargetUserName =~ "sarah.finance",
+        "Successful logon after failures",
+    EventID == 4624 and TargetUserName =~ "Service.Backup",
+        "Lateral movement to DC01",
+    EventID == 4624 and TargetUserName =~ "svc.deploy"
+        and Computer startswith "CLIENT01",
+        "Privileged interactive logon",
+    EventID == 4624 and TargetUserName =~ "svc.deploy"
+        and Computer startswith "DC01",
+        "Domain compromise - remote admin access",
+    EventID == 4672 and SubjectUserName =~ "Service.Backup",
+        "Special privileges - compromised admin",
+    EventID == 4672 and SubjectUserName =~ "svc.deploy",
+        "Special privileges - persistence account",
+    EventID == 4720,
+        "Domain persistence account created",
+    EventID == 4728,
+        "Persistence account added to Domain Admins",
+    "Other"
+)
+| extend Process = extract(@"([^\\]+)$", 1, NewProcessName)
+| summarize arg_min(TimeGenerated, *) by
+    Stage,
+    EventID,
+    Computer,
+    Actor,
+    Target,
+    Process,
+    LogonType
+| project
+    TimeGenerated,
+    Stage,
+    EventID,
+    Computer,
+    Actor,
+    Target,
+    Process,
+    LogonType,
+    IpAddress,
+    AuthenticationPackageName
+| order by TimeGenerated asc

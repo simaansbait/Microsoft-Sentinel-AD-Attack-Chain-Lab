@@ -1,0 +1,46 @@
+let ProcessEvents =
+    SecurityEvent
+    | where TimeGenerated > ago(7d)
+    | where EventID == 4688
+    | where Computer startswith "CLIENT01"
+    | where NewProcessName endswith @"\net.exe"
+    | project
+        ProcessTime = TimeGenerated,
+        SourceHost = Computer,
+        InitiatingUser = Account,
+        Process = extract(@"([^\\]+)$", 1, NewProcessName),
+        CommandLine;
+
+let RemoteLogons =
+    SecurityEvent
+    | where TimeGenerated > ago(7d)
+    | where EventID == 4624
+    | where Computer startswith "DC01"
+    | where LogonType == 3
+    | project
+        LogonTime = TimeGenerated,
+        DestinationHost = Computer,
+        RemoteUser = Account,
+        TargetUserName,
+        SourceIp = IpAddress,
+        WorkstationName,
+        LogonType,
+        Authentication = AuthenticationPackageName;
+
+ProcessEvents
+| join kind=inner RemoteLogons on $left.SourceHost == $right.WorkstationName
+| where LogonTime between (ProcessTime .. ProcessTime + 10m)
+| project
+    ProcessTime,
+    LogonTime,
+    SourceHost,
+    InitiatingUser,
+    Process,
+    CommandLine,
+    DestinationHost,
+    RemoteUser,
+    TargetUserName,
+    SourceIp,
+    LogonType,
+    Authentication
+| order by ProcessTime asc

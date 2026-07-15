@@ -1,0 +1,43 @@
+let FailedLogons =
+    SecurityEvent
+    | where TimeGenerated > ago(7d)
+    | where EventID == 4625
+    | summarize
+        FailedAttempts = count(),
+        FirstFailure = min(TimeGenerated),
+        LastFailure = max(TimeGenerated)
+        by TargetUserName, TargetDomainName, Computer;
+
+let SuccessfulLogons =
+    SecurityEvent
+    | where TimeGenerated > ago(7d)
+    | where EventID == 4624
+    | project
+        SuccessTime = TimeGenerated,
+        Computer,
+        Account,
+        TargetUserName,
+        TargetDomainName,
+        LogonType,
+        IpAddress,
+        WorkstationName,
+        AuthenticationPackageName;
+
+FailedLogons
+| join kind=inner SuccessfulLogons on TargetUserName, TargetDomainName, Computer
+| where SuccessTime > LastFailure
+| where SuccessTime <= LastFailure + 30m
+| project
+    SuccessTime,
+    Computer,
+    TargetDomainName,
+    TargetUserName,
+    FailedAttempts,
+    FirstFailure,
+    LastFailure,
+    Account,
+    LogonType,
+    IpAddress,
+    WorkstationName,
+    AuthenticationPackageName
+| order by SuccessTime asc

@@ -1,0 +1,13 @@
+SecurityEvent
+| where TimeGenerated > ago(7d)
+| where EventID == 4688
+| project
+    TimeGenerated,
+    Computer,
+    Account,
+    SubjectUserName,
+    NewProcessName,
+    ParentProcessName,
+    CommandLine,
+    Activity
+| order by TimeGenerated asc

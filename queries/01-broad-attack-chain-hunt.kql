@@ -1,0 +1,44 @@
+let StartTime = datetime(2026-07-14 00:00:00);
+let EndTime = now();
+
+SecurityEvent
+| where TimeGenerated between (StartTime .. EndTime)
+| where EventID in (4624, 4625, 4672, 4688, 4720, 4728, 4740)
+| where Account !endswith "$"
+| where SubjectUserName !endswith "$"
+| where TargetUserName !endswith "$"
+| where Account !in~ (
+    @"NT AUTHORITY\SYSTEM",
+    @"NT AUTHORITY\LOCAL SERVICE",
+    @"NT AUTHORITY\NETWORK SERVICE"
+)
+| where SubjectUserName !in~ (
+    "SYSTEM",
+    "LOCAL SERVICE",
+    "NETWORK SERVICE"
+)
+| where SubjectUserName !startswith "DWM-"
+| where SubjectUserName !startswith "UMFD-"
+| extend Stage = case(
+    EventID == 4688, "Process execution / reconnaissance",
+    EventID == 4625, "Failed logon",
+    EventID == 4740, "Account lockout",
+    EventID == 4624, "Successful logon",
+    EventID == 4672, "Special privileges",
+    EventID == 4720, "Domain account creation",
+    EventID == 4728, "Privileged group modification",
+    "Other"
+)
+| project
+    TimeGenerated,
+    Stage,
+    EventID,
+    Computer,
+    Account,
+    SubjectUserName,
+    TargetUserName,
+    MemberName,
+    NewProcessName,
+    LogonType,
+    IpAddress
+| order by TimeGenerated asc

@@ -1,0 +1,22 @@
+SecurityEvent
+| where TimeGenerated > ago(7d)
+| where EventID == 4624
+| where TargetUserName !endswith "$"
+| where TargetUserName !in~ (
+    "SYSTEM",
+    "LOCAL SERVICE",
+    "NETWORK SERVICE",
+    "ANONYMOUS LOGON"
+)
+| project
+    TimeGenerated,
+    Computer,
+    Account,
+    TargetUserName,
+    TargetDomainName,
+    LogonType,
+    IpAddress,
+    WorkstationName,
+    AuthenticationPackageName,
+    Activity
+| order by TimeGenerated asc

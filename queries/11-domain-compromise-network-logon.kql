@@ -1,0 +1,17 @@
+SecurityEvent
+| where TimeGenerated > ago(7d)
+| where EventID == 4624
+| where Computer startswith "DC01"
+| where LogonType == 3
+| project
+    TimeGenerated,
+    Computer,
+    Account,
+    TargetUserName,
+    TargetDomainName,
+    LogonType,
+    IpAddress,
+    WorkstationName,
+    AuthenticationPackageName,
+    Activity
+| order by TimeGenerated asc

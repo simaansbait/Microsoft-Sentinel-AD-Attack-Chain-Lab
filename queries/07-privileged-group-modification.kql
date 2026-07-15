@@ -1,0 +1,14 @@
+SecurityEvent
+| where TimeGenerated > ago(7d)
+| where EventID == 4728
+| project
+    TimeGenerated,
+    Computer,
+    Account,
+    SubjectUserName,
+    SubjectDomainName,
+    MemberName,
+    TargetUserName,
+    TargetDomainName,
+    Activity
+| order by TimeGenerated asc

@@ -1,0 +1,21 @@
+SecurityEvent
+| where TimeGenerated > ago(7d)
+| where EventID == 4672
+| where SubjectUserName !endswith "$"
+| where SubjectUserName !startswith "DWM-"
+| where SubjectUserName !startswith "UMFD-"
+| where SubjectUserName !in~ (
+    "SYSTEM",
+    "LOCAL SERVICE",
+    "NETWORK SERVICE",
+    "ANONYMOUS LOGON"
+)
+| project
+    TimeGenerated,
+    Computer,
+    Account,
+    SubjectUserName,
+    SubjectDomainName,
+    PrivilegeList,
+    Activity
+| order by TimeGenerated asc

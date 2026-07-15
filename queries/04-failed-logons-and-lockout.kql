@@ -1,0 +1,21 @@
+SecurityEvent
+| where TimeGenerated > ago(7d)
+| where EventID in (4625, 4740)
+| extend Stage = case(
+    EventID == 4625, "Failed logon",
+    EventID == 4740, "Account lockout",
+    "Other"
+)
+| project
+    TimeGenerated,
+    Stage,
+    EventID,
+    Computer,
+    Account,
+    SubjectUserName,
+    TargetUserName,
+    TargetDomainName,
+    IpAddress,
+    WorkstationName,
+    Activity
+| order by TimeGenerated asc
