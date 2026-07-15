@@ -476,7 +476,7 @@ The main incident was:
 
 ![Session and Ticket Cleanup](Images/07-investigation-and-response/05-client01-session-and-ticket-cleanup.png)
 
-![Analyst Investigation Comment](Images/07-investigation-and-response/06a-sentinel-analyst-investigation-comment.png)
+![Analyst Investigation Comment](Images/07-investigation-and-response/06-sentinel-incident-resolved-true-positive.png)
 
 ![Resolved True Positive Incident](Images/07-investigation-and-response/06-sentinel-incident-resolved-true-positive.png)
 
